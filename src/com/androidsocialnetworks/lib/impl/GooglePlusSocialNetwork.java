@@ -1,5 +1,8 @@
 package com.androidsocialnetworks.lib.impl;
 
+import java.io.File;
+import java.util.UUID;
+
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
@@ -7,6 +10,7 @@ import android.os.Handler;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 
+import com.androidsocialnetworks.lib.AccessToken;
 import com.androidsocialnetworks.lib.MomentUtil;
 import com.androidsocialnetworks.lib.SocialNetwork;
 import com.androidsocialnetworks.lib.SocialNetworkException;
@@ -21,9 +25,6 @@ import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesClient;
 import com.google.android.gms.plus.PlusClient;
 import com.google.android.gms.plus.model.people.Person;
-
-import java.io.File;
-import java.util.UUID;
 
 public class GooglePlusSocialNetwork extends SocialNetwork
         implements GooglePlayServicesClient.ConnectionCallbacks, GooglePlayServicesClient.OnConnectionFailedListener {
@@ -49,6 +50,11 @@ public class GooglePlusSocialNetwork extends SocialNetwork
     public boolean isConnected() {
         return mPlusClient.isConnected();
     }
+    
+    @Override
+	public AccessToken getAccessToken() {
+    	throw new SocialNetworkException("Not supported for GooglePlusSocialNetwork");
+	}
 
     @Override
     public void requestLogin(OnLoginCompleteListener onLoginCompleteListener) {

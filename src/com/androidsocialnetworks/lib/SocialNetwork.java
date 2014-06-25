@@ -114,6 +114,8 @@ public abstract class SocialNetwork {
     public abstract void logout();
 
     public abstract int getID();
+    
+    public abstract AccessToken getAccessToken();
 
     public void requestCurrentPerson() {
         requestCurrentPerson(null);

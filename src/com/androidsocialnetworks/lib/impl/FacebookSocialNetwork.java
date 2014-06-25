@@ -14,6 +14,7 @@ import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 
+import com.androidsocialnetworks.lib.AccessToken;
 import com.androidsocialnetworks.lib.SocialNetwork;
 import com.androidsocialnetworks.lib.SocialNetworkException;
 import com.androidsocialnetworks.lib.SocialPerson;
@@ -71,6 +72,12 @@ public class FacebookSocialNetwork extends SocialNetwork {
 	public boolean isConnected() {
 		Session session = Session.getActiveSession();
 		return (session != null && session.isOpened());
+	}
+
+	@Override
+	public AccessToken getAccessToken() {
+		return new AccessToken(Session.getActiveSession().getAccessToken(),
+				null);
 	}
 
 	@Override
@@ -170,7 +177,8 @@ public class FacebookSocialNetwork extends SocialNetwork {
 									.format("http://graph.facebook.com/%s/picture?width=200&height=200",
 											me.getId());
 							try {
-								socialPerson.email = new JSONObject(response.getRawResponse()).optString("email");
+								socialPerson.email = new JSONObject(response
+										.getRawResponse()).optString("email");
 							} catch (JSONException e) {
 							}
 
