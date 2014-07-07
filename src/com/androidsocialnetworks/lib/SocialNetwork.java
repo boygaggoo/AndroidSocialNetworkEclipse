@@ -38,6 +38,7 @@ public abstract class SocialNetwork {
     public static final String REQUEST_GET_PERSON = "SocialNetwork.REQUEST_GET_PERSON";
     public static final String REQUEST_POST_MESSAGE = "SocialNetwork.REQUEST_POST_MESSAGE";
     public static final String REQUEST_POST_PHOTO = "SocialNetwork.REQUEST_POST_PHOTO";
+    public static final String REQUEST_POST_LINK = "SocialNetwork.REQUEST_POST_LINK";
     public static final String REQUEST_CHECK_IS_FRIEND = "SocialNetwork.REQUEST_CHECK_IS_FRIEND";
     public static final String REQUEST_ADD_FRIEND = "SocialNetwork.REQUEST_ADD_FRIEND";
     public static final String REQUEST_REMOVE_FRIEND = "SocialNetwork.REQUEST_REMOVE_FRIEND";
@@ -145,6 +146,14 @@ public abstract class SocialNetwork {
     public void requestPostPhoto(File photo, String message, OnPostingCompleteListener onPostingCompleteListener) {
         registerListener(REQUEST_POST_PHOTO, onPostingCompleteListener);
     }
+    
+    public void requestPostLink(String url, String pictureUrl) {
+        requestPostLink(url, pictureUrl, null);
+    }
+
+    public void requestPostLink(String url, String pictureUrl, OnPostingCompleteListener onPostingCompleteListener) {
+        registerListener(REQUEST_POST_LINK, onPostingCompleteListener);
+    }
 
     public void requestCheckIsFriend(String userID) {
         requestCheckIsFriend(userID, null);
@@ -188,6 +197,10 @@ public abstract class SocialNetwork {
 
     public void cancelPostPhotoRequest() {
         mLocalListeners.remove(REQUEST_POST_PHOTO);
+    }
+    
+    public void cancelPostLinkRequest() {
+        mLocalListeners.remove(REQUEST_POST_LINK);
     }
 
     public void cancelCheckIsFriendRequest() {
@@ -259,6 +272,10 @@ public abstract class SocialNetwork {
 
     public void setOnPostingPhotoCompleteListener(OnPostingCompleteListener onPostingCompleteListener) {
         mGlobalListeners.put(REQUEST_POST_PHOTO, onPostingCompleteListener);
+    }
+    
+    public void setOnPostingLinkCompleteListener(OnPostingCompleteListener onPostingCompleteListener) {
+        mGlobalListeners.put(REQUEST_POST_LINK, onPostingCompleteListener);
     }
 
     public void setOnRequestAddFriendCompleteListener(OnRequestAddFriendCompleteListener onRequestAddFriendCompleteListener) {

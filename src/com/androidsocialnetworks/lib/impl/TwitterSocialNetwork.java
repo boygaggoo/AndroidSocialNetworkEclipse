@@ -31,7 +31,6 @@ import twitter4j.User;
 import twitter4j.auth.AccessToken;
 import twitter4j.auth.RequestToken;
 import twitter4j.conf.ConfigurationBuilder;
-
 import static com.androidsocialnetworks.lib.Consts.TAG;
 
 public class TwitterSocialNetwork extends OAuthSocialNetwork {
@@ -165,6 +164,11 @@ public class TwitterSocialNetwork extends OAuthSocialNetwork {
         args.putString(RequestUpdateStatusAsyncTask.PARAM_PHOTO_PATH, photo.getAbsolutePath());
 
         executeRequest(new RequestUpdateStatusAsyncTask(), args, REQUEST_POST_PHOTO);
+    }
+    
+    @Override
+    public void requestPostLink(String url, String pictureUrl, OnPostingCompleteListener onPostingCompleteListener) {
+    	throw new SocialNetworkException("requestPostLink isn't allowed for TwitterSocialNetwork");
     }
 
     @Override

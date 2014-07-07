@@ -38,374 +38,460 @@ import java.util.Collections;
  * TODO: think about canceling requests
  */
 public class FacebookSocialNetwork extends SocialNetwork {
-    public static final int ID = 4;
+	public static final int ID = 4;
 
-    private static final String TAG = FacebookSocialNetwork.class.getSimpleName();
-    private static final String PERMISSION = "publish_actions";
-    private SessionTracker mSessionTracker;
-    private UiLifecycleHelper mUILifecycleHelper;
-    private String mApplicationId;
-    private SessionState mSessionState;
-    private String mPhotoPath;
-    private String mStatus;
-    private PendingAction mPendingAction = PendingAction.NONE;
-    private Session.StatusCallback mSessionStatusCallback = new Session.StatusCallback() {
-        @Override
-        public void call(Session session, SessionState state, Exception exception) {
-            onSessionStateChange(session, state, exception);
-        }
-    };
+	private static final String TAG = FacebookSocialNetwork.class
+			.getSimpleName();
+	private static final String PERMISSION = "publish_actions";
+	private SessionTracker mSessionTracker;
+	private UiLifecycleHelper mUILifecycleHelper;
+	private String mApplicationId;
+	private SessionState mSessionState;
+	private String mPhotoPath;
+	private String mStatus;
+	private String mUrl;
+	private String mPictureUrl;
+	private PendingAction mPendingAction = PendingAction.NONE;
+	private Session.StatusCallback mSessionStatusCallback = new Session.StatusCallback() {
+		@Override
+		public void call(Session session, SessionState state,
+				Exception exception) {
+			onSessionStateChange(session, state, exception);
+		}
+	};
 
-    public FacebookSocialNetwork(Fragment fragment) {
-        super(fragment);
-    }
+	public FacebookSocialNetwork(Fragment fragment) {
+		super(fragment);
+	}
 
-    @Override
-    public boolean isConnected() {
-        Session session = Session.getActiveSession();
-        return (session != null && session.isOpened());
-    }
+	@Override
+	public boolean isConnected() {
+		Session session = Session.getActiveSession();
+		return (session != null && session.isOpened());
+	}
 
-    @Override
-    public void requestLogin(OnLoginCompleteListener onLoginCompleteListener) {
-        super.requestLogin(onLoginCompleteListener);
+	@Override
+	public void requestLogin(OnLoginCompleteListener onLoginCompleteListener) {
+		super.requestLogin(onLoginCompleteListener);
 
-        final Session openSession = mSessionTracker.getOpenSession();
+		final Session openSession = mSessionTracker.getOpenSession();
 
-        if (openSession != null) {
-            if (mLocalListeners.get(REQUEST_LOGIN) != null) {
-                mLocalListeners.get(REQUEST_LOGIN).onError(getID(), REQUEST_LOGIN, "already loginned", null);
-            }
-        }
+		if (openSession != null) {
+			if (mLocalListeners.get(REQUEST_LOGIN) != null) {
+				mLocalListeners.get(REQUEST_LOGIN).onError(getID(),
+						REQUEST_LOGIN, "already loginned", null);
+			}
+		}
 
-        Session currentSession = mSessionTracker.getSession();
-        if (currentSession == null || currentSession.getState().isClosed()) {
-            mSessionTracker.setSession(null);
-            Session session = new Session.Builder(mSocialNetworkManager.getActivity())
-                    .setApplicationId(mApplicationId).build();
-            Session.setActiveSession(session);
-            currentSession = session;
-        }
+		Session currentSession = mSessionTracker.getSession();
+		if (currentSession == null || currentSession.getState().isClosed()) {
+			mSessionTracker.setSession(null);
+			Session session = new Session.Builder(
+					mSocialNetworkManager.getActivity()).setApplicationId(
+					mApplicationId).build();
+			Session.setActiveSession(session);
+			currentSession = session;
+		}
 
-        if (!currentSession.isOpened()) {
-            Session.OpenRequest openRequest = null;
-            openRequest = new Session.OpenRequest(mSocialNetworkManager);
+		if (!currentSession.isOpened()) {
+			Session.OpenRequest openRequest = null;
+			openRequest = new Session.OpenRequest(mSocialNetworkManager);
 
-            openRequest.setDefaultAudience(SessionDefaultAudience.EVERYONE);
-            openRequest.setPermissions(Collections.<String>emptyList());
-            openRequest.setLoginBehavior(SessionLoginBehavior.SSO_WITH_FALLBACK);
+			openRequest.setDefaultAudience(SessionDefaultAudience.EVERYONE);
+			openRequest.setPermissions(Collections.<String> emptyList());
+			openRequest
+					.setLoginBehavior(SessionLoginBehavior.SSO_WITH_FALLBACK);
 
-            currentSession.openForRead(openRequest);
-        }
-    }
+			currentSession.openForRead(openRequest);
+		}
+	}
 
-    @Override
-    public void logout() {
-        if (mSessionTracker == null) return;
+	@Override
+	public void logout() {
+		if (mSessionTracker == null)
+			return;
 
-        final Session openSession = mSessionTracker.getOpenSession();
+		final Session openSession = mSessionTracker.getOpenSession();
 
-        if (openSession != null) {
-            openSession.closeAndClearTokenInformation();
-        }
-    }
+		if (openSession != null) {
+			openSession.closeAndClearTokenInformation();
+		}
+	}
 
-    @Override
-    public int getID() {
-        return ID;
-    }
+	@Override
+	public int getID() {
+		return ID;
+	}
 
-    @Override
-    public void requestCurrentPerson(OnRequestSocialPersonCompleteListener onRequestSocialPersonCompleteListener) {
-        super.requestCurrentPerson(onRequestSocialPersonCompleteListener);
+	@Override
+	public void requestCurrentPerson(
+			OnRequestSocialPersonCompleteListener onRequestSocialPersonCompleteListener) {
+		super.requestCurrentPerson(onRequestSocialPersonCompleteListener);
 
-        final Session currentSession = mSessionTracker.getOpenSession();
+		final Session currentSession = mSessionTracker.getOpenSession();
 
-        if (currentSession == null) {
-            if (mLocalListeners.get(REQUEST_GET_CURRENT_PERSON) != null) {
-                mLocalListeners.get(REQUEST_GET_CURRENT_PERSON).onError(getID(),
-                        REQUEST_GET_CURRENT_PERSON, "please login first", null);
-            }
+		if (currentSession == null) {
+			if (mLocalListeners.get(REQUEST_GET_CURRENT_PERSON) != null) {
+				mLocalListeners.get(REQUEST_GET_CURRENT_PERSON).onError(
+						getID(), REQUEST_GET_CURRENT_PERSON,
+						"please login first", null);
+			}
 
-            return;
-        }
+			return;
+		}
 
-        Request request = Request.newMeRequest(currentSession, new Request.GraphUserCallback() {
-            @Override
-            public void onCompleted(GraphUser me, Response response) {
-                if (response.getError() != null) {
-                    if (mLocalListeners.get(REQUEST_GET_CURRENT_PERSON) != null) {
-                        mLocalListeners.get(REQUEST_GET_CURRENT_PERSON).onError(
-                                getID(), REQUEST_GET_CURRENT_PERSON, response.getError().getErrorMessage()
-                                , null);
-                    }
+		Request request = Request.newMeRequest(currentSession,
+				new Request.GraphUserCallback() {
+					@Override
+					public void onCompleted(GraphUser me, Response response) {
+						if (response.getError() != null) {
+							if (mLocalListeners.get(REQUEST_GET_CURRENT_PERSON) != null) {
+								mLocalListeners.get(REQUEST_GET_CURRENT_PERSON)
+										.onError(
+												getID(),
+												REQUEST_GET_CURRENT_PERSON,
+												response.getError()
+														.getErrorMessage(),
+												null);
+							}
 
-                    return;
-                }
+							return;
+						}
 
-                if (mLocalListeners.get(REQUEST_GET_CURRENT_PERSON) != null) {
-                    SocialPerson socialPerson = new SocialPerson();
-                    socialPerson.id = me.getId();
-                    socialPerson.name = me.getName();
-                    socialPerson.avatarURL =
-                            String.format("http://graph.facebook.com/%s/picture?width=200&height=200", me.getId());
+						if (mLocalListeners.get(REQUEST_GET_CURRENT_PERSON) != null) {
+							SocialPerson socialPerson = new SocialPerson();
+							socialPerson.id = me.getId();
+							socialPerson.name = me.getName();
+							socialPerson.avatarURL = String
+									.format("http://graph.facebook.com/%s/picture?width=200&height=200",
+											me.getId());
 
-                    ((OnRequestSocialPersonCompleteListener) mLocalListeners.get(REQUEST_GET_CURRENT_PERSON))
-                            .onRequestSocialPersonSuccess(getID(), socialPerson);
-                }
-            }
-        });
-        request.executeAsync();
-    }
+							((OnRequestSocialPersonCompleteListener) mLocalListeners
+									.get(REQUEST_GET_CURRENT_PERSON))
+									.onRequestSocialPersonSuccess(getID(),
+											socialPerson);
+						}
+					}
+				});
+		request.executeAsync();
+	}
 
-    @Override
-    public void requestSocialPerson(String userID, OnRequestSocialPersonCompleteListener onRequestSocialPersonCompleteListener) {
-        throw new SocialNetworkException("requestSocialPerson isn't allowed for FacebookSocialNetwork");
-    }
+	@Override
+	public void requestSocialPerson(
+			String userID,
+			OnRequestSocialPersonCompleteListener onRequestSocialPersonCompleteListener) {
+		throw new SocialNetworkException(
+				"requestSocialPerson isn't allowed for FacebookSocialNetwork");
+	}
 
-    @Override
-    public void requestPostMessage(String message, OnPostingCompleteListener onPostingCompleteListener) {
-        super.requestPostMessage(message, onPostingCompleteListener);
-        mStatus = message;
-        performPublish(PendingAction.POST_STATUS_UPDATE);
-    }
+	@Override
+	public void requestPostMessage(String message,
+			OnPostingCompleteListener onPostingCompleteListener) {
+		super.requestPostMessage(message, onPostingCompleteListener);
+		mStatus = message;
+		performPublish(PendingAction.POST_STATUS_UPDATE);
+	}
 
-    @Override
-    public void requestPostPhoto(File photo, String message, OnPostingCompleteListener onPostingCompleteListener) {
-        super.requestPostPhoto(photo, message, onPostingCompleteListener);
-        mPhotoPath = photo.getAbsolutePath();
-        performPublish(PendingAction.POST_PHOTO);
-    }
+	@Override
+	public void requestPostPhoto(File photo, String message,
+			OnPostingCompleteListener onPostingCompleteListener) {
+		super.requestPostPhoto(photo, message, onPostingCompleteListener);
+		mPhotoPath = photo.getAbsolutePath();
+		performPublish(PendingAction.POST_PHOTO);
+	}
 
-    private void performPublish(PendingAction action) {
-        Session session = Session.getActiveSession();
-        if (session != null) {
-            mPendingAction = action;
-            if (hasPublishPermission()) {
-                // We can do the action right away.
-                handlePendingAction();
-                return;
-            } else if (session.isOpened()) {
-                // We need to get new permissions, then complete the action when we get called back.
-                session.requestNewPublishPermissions(new Session.NewPermissionsRequest(mSocialNetworkManager.getActivity(), PERMISSION));
-                return;
-            }
-        }
+	@Override
+	public void requestPostLink(String url, String pictureUrl,
+			OnPostingCompleteListener onPostingCompleteListener) {
+		super.requestPostLink(url, pictureUrl, onPostingCompleteListener);
+		mUrl = url;
+		mPictureUrl = pictureUrl;
+		performPublish(PendingAction.POST_LINK);
+	}
 
-        if (action == PendingAction.POST_STATUS_UPDATE) {
-            if (mLocalListeners.get(REQUEST_POST_MESSAGE) != null) {
-                mLocalListeners.get(REQUEST_POST_MESSAGE).onError(getID(),
-                        REQUEST_POST_MESSAGE, "no session", null);
-            }
-        }
+	private void performPublish(PendingAction action) {
+		Session session = Session.getActiveSession();
+		if (session != null) {
+			mPendingAction = action;
+			if (hasPublishPermission()) {
+				// We can do the action right away.
+				handlePendingAction();
+				return;
+			} else if (session.isOpened()) {
+				// We need to get new permissions, then complete the action when
+				// we get called back.
+				session.requestNewPublishPermissions(new Session.NewPermissionsRequest(
+						mSocialNetworkManager.getActivity(), PERMISSION));
+				return;
+			}
+		}
 
-        if (action == PendingAction.POST_PHOTO) {
-            if (mLocalListeners.get(REQUEST_POST_PHOTO) != null) {
-                mLocalListeners.get(REQUEST_POST_PHOTO).onError(getID(),
-                        REQUEST_POST_PHOTO, "no session", null);
-            }
-        }
-    }
+		if (action == PendingAction.POST_STATUS_UPDATE) {
+			if (mLocalListeners.get(REQUEST_POST_MESSAGE) != null) {
+				mLocalListeners.get(REQUEST_POST_MESSAGE).onError(getID(),
+						REQUEST_POST_MESSAGE, "no session", null);
+			}
+		}
 
-    @Override
-    public void requestCheckIsFriend(String userID, OnCheckIsFriendCompleteListener onCheckIsFriendCompleteListener) {
-        throw new SocialNetworkException("requestCheckIsFriend isn't allowed for FacebookSocialNetwork");
-    }
+		if (action == PendingAction.POST_PHOTO) {
+			if (mLocalListeners.get(REQUEST_POST_PHOTO) != null) {
+				mLocalListeners.get(REQUEST_POST_PHOTO).onError(getID(),
+						REQUEST_POST_PHOTO, "no session", null);
+			}
+		}
 
-    @Override
-    public void requestAddFriend(String userID, OnRequestAddFriendCompleteListener onRequestAddFriendCompleteListener) {
-        throw new SocialNetworkException("requestAddFriend isn't allowed for FacebookSocialNetwork");
-    }
+		if (action == PendingAction.POST_LINK) {
+			if (mLocalListeners.get(REQUEST_POST_LINK) != null) {
+				mLocalListeners.get(REQUEST_POST_LINK).onError(getID(),
+						REQUEST_POST_LINK, "no session", null);
+			}
+		}
+	}
 
-    @Override
-    public void requestRemoveFriend(String userID, OnRequestRemoveFriendCompleteListener onRequestRemoveFriendCompleteListener) {
-        throw new SocialNetworkException("requestRemoveFriend isn't allowed for FacebookSocialNetwork");
-    }
+	@Override
+	public void requestCheckIsFriend(String userID,
+			OnCheckIsFriendCompleteListener onCheckIsFriendCompleteListener) {
+		throw new SocialNetworkException(
+				"requestCheckIsFriend isn't allowed for FacebookSocialNetwork");
+	}
 
-    private void onSessionStateChange(Session session, SessionState state, Exception exception) {
-        Log.d(TAG, "onSessionStateChange: " + state + " : " + exception);
+	@Override
+	public void requestAddFriend(
+			String userID,
+			OnRequestAddFriendCompleteListener onRequestAddFriendCompleteListener) {
+		throw new SocialNetworkException(
+				"requestAddFriend isn't allowed for FacebookSocialNetwork");
+	}
 
-        if (mSessionState == SessionState.OPENING && state == SessionState.OPENED) {
-            if (mLocalListeners.get(REQUEST_LOGIN) != null) {
-                ((OnLoginCompleteListener) mLocalListeners.get(REQUEST_LOGIN)).onLoginSuccess(getID());
-                mLocalListeners.remove(REQUEST_LOGIN);
-            }
-        }
+	@Override
+	public void requestRemoveFriend(
+			String userID,
+			OnRequestRemoveFriendCompleteListener onRequestRemoveFriendCompleteListener) {
+		throw new SocialNetworkException(
+				"requestRemoveFriend isn't allowed for FacebookSocialNetwork");
+	}
 
-        if (state == SessionState.CLOSED_LOGIN_FAILED) {
-            if (mLocalListeners.get(REQUEST_LOGIN) != null) {
-                mLocalListeners.get(REQUEST_LOGIN).onError(getID(), REQUEST_LOGIN, exception.getMessage(), null);
-                mLocalListeners.remove(REQUEST_LOGIN);
-            }
-        }
+	private void onSessionStateChange(Session session, SessionState state,
+			Exception exception) {
+		Log.d(TAG, "onSessionStateChange: " + state + " : " + exception);
 
-        mSessionState = state;
+		if (mSessionState == SessionState.OPENING
+				&& state == SessionState.OPENED) {
+			if (mLocalListeners.get(REQUEST_LOGIN) != null) {
+				((OnLoginCompleteListener) mLocalListeners.get(REQUEST_LOGIN))
+						.onLoginSuccess(getID());
+				mLocalListeners.remove(REQUEST_LOGIN);
+			}
+		}
 
-        if (mPendingAction != PendingAction.NONE &&
-                (exception instanceof FacebookOperationCanceledException ||
-                        exception instanceof FacebookAuthorizationException)) {
-            mPendingAction = PendingAction.NONE;
+		if (state == SessionState.CLOSED_LOGIN_FAILED) {
+			if (mLocalListeners.get(REQUEST_LOGIN) != null) {
+				mLocalListeners.get(REQUEST_LOGIN).onError(getID(),
+						REQUEST_LOGIN, exception.getMessage(), null);
+				mLocalListeners.remove(REQUEST_LOGIN);
+			}
+		}
 
-            if (mLocalListeners.get(REQUEST_POST_MESSAGE) != null) {
-                mLocalListeners.get(REQUEST_POST_MESSAGE).onError(getID(),
-                        REQUEST_POST_MESSAGE, "permission not granted", null);
-            }
+		mSessionState = state;
 
-            if (mLocalListeners.get(REQUEST_POST_PHOTO) != null) {
-                mLocalListeners.get(REQUEST_POST_PHOTO).onError(getID(),
-                        REQUEST_POST_PHOTO, "permission not granted", null);
-            }
-        }
+		if (mPendingAction != PendingAction.NONE
+				&& (exception instanceof FacebookOperationCanceledException || exception instanceof FacebookAuthorizationException)) {
+			mPendingAction = PendingAction.NONE;
 
-        if (session.getPermissions().contains(PERMISSION)
-                && state == SessionState.OPENED_TOKEN_UPDATED) {
-            handlePendingAction();
-        }
-    }
+			if (mLocalListeners.get(REQUEST_POST_MESSAGE) != null) {
+				mLocalListeners.get(REQUEST_POST_MESSAGE).onError(getID(),
+						REQUEST_POST_MESSAGE, "permission not granted", null);
+			}
 
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        mUILifecycleHelper = new UiLifecycleHelper(mSocialNetworkManager.getActivity(), mSessionStatusCallback);
-        mUILifecycleHelper.onCreate(savedInstanceState);
+			if (mLocalListeners.get(REQUEST_POST_PHOTO) != null) {
+				mLocalListeners.get(REQUEST_POST_PHOTO).onError(getID(),
+						REQUEST_POST_PHOTO, "permission not granted", null);
+			}
 
-        initializeActiveSessionWithCachedToken(mSocialNetworkManager.getActivity());
-        finishInit();
-    }
+			if (mLocalListeners.get(REQUEST_POST_LINK) != null) {
+				mLocalListeners.get(REQUEST_POST_LINK).onError(getID(),
+						REQUEST_POST_LINK, "permission not granted", null);
+			}
+		}
 
-    private boolean initializeActiveSessionWithCachedToken(Context context) {
-        if (context == null) {
-            return false;
-        }
+		if (session.getPermissions().contains(PERMISSION)
+				&& state == SessionState.OPENED_TOKEN_UPDATED) {
+			handlePendingAction();
+		}
+	}
 
-        Session session = Session.getActiveSession();
-        if (session != null) {
-            return session.isOpened();
-        }
+	@Override
+	public void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		mUILifecycleHelper = new UiLifecycleHelper(
+				mSocialNetworkManager.getActivity(), mSessionStatusCallback);
+		mUILifecycleHelper.onCreate(savedInstanceState);
 
-        mApplicationId = Utility.getMetadataApplicationId(context);
-        if (mApplicationId == null) {
-            return false;
-        }
+		initializeActiveSessionWithCachedToken(mSocialNetworkManager
+				.getActivity());
+		finishInit();
+	}
 
-        return Session.openActiveSessionFromCache(context) != null;
-    }
+	private boolean initializeActiveSessionWithCachedToken(Context context) {
+		if (context == null) {
+			return false;
+		}
 
-    private void finishInit() {
-        mSessionTracker = new SessionTracker(
-                mSocialNetworkManager.getActivity(), mSessionStatusCallback, null, false);
-    }
+		Session session = Session.getActiveSession();
+		if (session != null) {
+			return session.isOpened();
+		}
 
-    @Override
-    public void onResume() {
-        super.onResume();
-        mUILifecycleHelper.onResume();
-    }
+		mApplicationId = Utility.getMetadataApplicationId(context);
+		if (mApplicationId == null) {
+			return false;
+		}
 
-    @Override
-    public void onPause() {
-        super.onPause();
-        mUILifecycleHelper.onPause();
-    }
+		return Session.openActiveSessionFromCache(context) != null;
+	}
 
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        mUILifecycleHelper.onDestroy();
-    }
+	private void finishInit() {
+		mSessionTracker = new SessionTracker(
+				mSocialNetworkManager.getActivity(), mSessionStatusCallback,
+				null, false);
+	}
 
-    @Override
-    public void onSaveInstanceState(Bundle outState) {
-        super.onSaveInstanceState(outState);
-        mUILifecycleHelper.onSaveInstanceState(outState);
-    }
+	@Override
+	public void onResume() {
+		super.onResume();
+		mUILifecycleHelper.onResume();
+	}
 
-    @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        mUILifecycleHelper.onActivityResult(requestCode, resultCode, data, null);
-    }
+	@Override
+	public void onPause() {
+		super.onPause();
+		mUILifecycleHelper.onPause();
+	}
 
-    public boolean hasPublishPermission() {
-        Session session = Session.getActiveSession();
-        return session != null && session.getPermissions().contains(PERMISSION);
-    }
+	@Override
+	public void onDestroy() {
+		super.onDestroy();
+		mUILifecycleHelper.onDestroy();
+	}
 
-    @SuppressWarnings("incomplete-switch")
-    private void handlePendingAction() {
-        PendingAction previouslyPendingAction = mPendingAction;
-        // These actions may re-set pendingAction if they are still pending, but we assume they
-        // will succeed.
-        mPendingAction = PendingAction.NONE;
+	@Override
+	public void onSaveInstanceState(Bundle outState) {
+		super.onSaveInstanceState(outState);
+		mUILifecycleHelper.onSaveInstanceState(outState);
+	}
 
-        switch (previouslyPendingAction) {
-            case POST_PHOTO:
-                postPhoto(mPhotoPath);
-                break;
-            case POST_STATUS_UPDATE:
-                postStatusUpdate(mStatus);
-                break;
-        }
-    }
+	@Override
+	public void onActivityResult(int requestCode, int resultCode, Intent data) {
+		mUILifecycleHelper
+				.onActivityResult(requestCode, resultCode, data, null);
+	}
 
-    private void postStatusUpdate(String message) {
-        if (isConnected() && hasPublishPermission()) {
-//            Request request = Request
-//                    .newStatusUpdateRequest(Session.getActiveSession(), message, null, null, new Request.Callback() {
-//                        @Override
-//                        public void onCompleted(Response response) {
-//                            publishSuccess(REQUEST_POST_MESSAGE,
-//                                    response.getError() == null ? null : response.getError().getErrorMessage());
-//                        }
-//                    });
-            
-            Bundle parameters = new Bundle();
-            parameters.putString("link", message);
-            
-        	Request request = new Request(Session.getActiveSession(), "me/feed", parameters, HttpMethod.POST, new Request.Callback() {
-                @Override
-                public void onCompleted(Response response) {
-                    publishSuccess(REQUEST_POST_MESSAGE,
-                            response.getError() == null ? null : response.getError().getErrorMessage());
-                }
-            });
-            
-            request.executeAsync();
-        } else {
-            mPendingAction = PendingAction.POST_STATUS_UPDATE;
-        }
-    }
+	public boolean hasPublishPermission() {
+		Session session = Session.getActiveSession();
+		return session != null && session.getPermissions().contains(PERMISSION);
+	}
 
-    private void postPhoto(final String path) {
-        if (hasPublishPermission()) {
-            Bitmap image = BitmapFactory.decodeFile(path);
-            Request request = Request.newUploadPhotoRequest(Session.getActiveSession(), image, new Request.Callback() {
-                @Override
-                public void onCompleted(Response response) {
-                    publishSuccess(REQUEST_POST_PHOTO,
-                            response.getError() == null ? null : response.getError().getErrorMessage());
-                }
-            });
-            request.executeAsync();
-        } else {
-            mPendingAction = PendingAction.POST_PHOTO;
-        }
-    }
+	@SuppressWarnings("incomplete-switch")
+	private void handlePendingAction() {
+		PendingAction previouslyPendingAction = mPendingAction;
+		// These actions may re-set pendingAction if they are still pending, but
+		// we assume they
+		// will succeed.
+		mPendingAction = PendingAction.NONE;
 
-    private void publishSuccess(String requestID, String error) {
-        if (mLocalListeners.get(requestID) == null) return;
+		switch (previouslyPendingAction) {
+		case POST_PHOTO:
+			postPhoto(mPhotoPath);
+			break;
+		case POST_STATUS_UPDATE:
+			postStatusUpdate(mStatus);
+			break;
+		case POST_LINK:
+			postLink(mUrl, mPictureUrl);
+			break;
+		}
+	}
 
-        if (error != null) {
-            mLocalListeners.get(requestID).onError(getID(), requestID, error, null);
-            return;
-        }
+	private void postStatusUpdate(String message) {
+		if (isConnected() && hasPublishPermission()) {
+			Request request = Request.newStatusUpdateRequest(
+					Session.getActiveSession(), message, null, null,
+					new Request.Callback() {
+						@Override
+						public void onCompleted(Response response) {
+							publishSuccess(REQUEST_POST_MESSAGE, response
+									.getError() == null ? null : response
+									.getError().getErrorMessage());
+						}
+					});
 
-        ((OnPostingCompleteListener) mLocalListeners.get(requestID)).onPostSuccessfully(getID());
-        mLocalListeners.remove(requestID);
-    }
+			request.executeAsync();
+		} else {
+			mPendingAction = PendingAction.POST_STATUS_UPDATE;
+		}
+	}
 
-    private enum PendingAction {
-        NONE,
-        POST_PHOTO,
-        POST_STATUS_UPDATE
-    }
+	private void postPhoto(final String path) {
+		if (hasPublishPermission()) {
+			Bitmap image = BitmapFactory.decodeFile(path);
+			Request request = Request.newUploadPhotoRequest(
+					Session.getActiveSession(), image, new Request.Callback() {
+						@Override
+						public void onCompleted(Response response) {
+							publishSuccess(REQUEST_POST_PHOTO, response
+									.getError() == null ? null : response
+									.getError().getErrorMessage());
+						}
+					});
+			request.executeAsync();
+		} else {
+			mPendingAction = PendingAction.POST_PHOTO;
+		}
+	}
+
+	private void postLink(final String url, final String pictureUrl) {
+		if (isConnected() && hasPublishPermission()) {
+
+			Bundle parameters = new Bundle();
+			parameters.putString("link", url);
+			if (pictureUrl != null) {
+				parameters.putString("picture", pictureUrl);
+			}
+
+			Request request = new Request(Session.getActiveSession(),
+					"me/feed", parameters, HttpMethod.POST,
+					new Request.Callback() {
+						@Override
+						public void onCompleted(Response response) {
+							publishSuccess(REQUEST_POST_LINK,
+									response.getError() == null ? null
+											: response.getError()
+													.getErrorMessage());
+						}
+					});
+
+			request.executeAsync();
+		} else {
+			mPendingAction = PendingAction.POST_LINK;
+		}
+	}
+
+	private void publishSuccess(String requestID, String error) {
+		if (mLocalListeners.get(requestID) == null)
+			return;
+
+		if (error != null) {
+			mLocalListeners.get(requestID).onError(getID(), requestID, error,
+					null);
+			return;
+		}
+
+		((OnPostingCompleteListener) mLocalListeners.get(requestID))
+				.onPostSuccessfully(getID());
+		mLocalListeners.remove(requestID);
+	}
+
+	private enum PendingAction {
+		NONE, POST_PHOTO, POST_STATUS_UPDATE, POST_LINK
+	}
 }

@@ -141,6 +141,11 @@ public class GooglePlusSocialNetwork extends SocialNetwork
     public void requestPostPhoto(File photo, String message, OnPostingCompleteListener onPostingCompleteListener) {
         throw new SocialNetworkException("requestPostPhoto isn't allowed for GooglePlusSocialNetwork");
     }
+    
+    @Override
+    public void requestPostLink(String url, String pictureUrl, OnPostingCompleteListener onPostingCompleteListener) {
+    	throw new SocialNetworkException("requestPostLink isn't allowed for GooglePlusSocialNetwork");
+    }
 
     @Override
     public void requestCheckIsFriend(String userID, OnCheckIsFriendCompleteListener onCheckIsFriendCompleteListener) {
