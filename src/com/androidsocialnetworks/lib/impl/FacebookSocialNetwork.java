@@ -1,5 +1,11 @@
 package com.androidsocialnetworks.lib.impl;
 
+import java.io.File;
+import java.util.Arrays;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -30,9 +36,6 @@ import com.facebook.UiLifecycleHelper;
 import com.facebook.internal.SessionTracker;
 import com.facebook.internal.Utility;
 import com.facebook.model.GraphUser;
-
-import java.io.File;
-import java.util.Collections;
 
 /**
  * TODO: think about canceling requests
@@ -94,11 +97,12 @@ public class FacebookSocialNetwork extends SocialNetwork {
 		}
 
 		if (!currentSession.isOpened()) {
+
 			Session.OpenRequest openRequest = null;
 			openRequest = new Session.OpenRequest(mSocialNetworkManager);
 
 			openRequest.setDefaultAudience(SessionDefaultAudience.EVERYONE);
-			openRequest.setPermissions(Collections.<String> emptyList());
+			openRequest.setPermissions(Arrays.asList("email"));
 			openRequest
 					.setLoginBehavior(SessionLoginBehavior.SSO_WITH_FALLBACK);
 
@@ -165,6 +169,10 @@ public class FacebookSocialNetwork extends SocialNetwork {
 							socialPerson.avatarURL = String
 									.format("http://graph.facebook.com/%s/picture?width=200&height=200",
 											me.getId());
+							try {
+								socialPerson.email = new JSONObject(response.getRawResponse()).optString("email");
+							} catch (JSONException e) {
+							}
 
 							((OnRequestSocialPersonCompleteListener) mLocalListeners
 									.get(REQUEST_GET_CURRENT_PERSON))
